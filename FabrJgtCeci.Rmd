@@ -1,0 +1,107 @@
+---
+title: "Fabrica de Juguetes Ceci"
+author: "Daniela Domínguez"
+date: "8/19/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problema
+
+La fabrica de juguetes de Ceci, Inc. está estimando el riesgo de lanzar un nuevo producto al mercado. Haga un modelo de simulación para determinar el riesgo de este nuevo producto. Determine cuales seran sus medidas de interes. Los datos son los siguientes:
+
+Precio de venta: $ 249.00
+
+Costo de publicidad: $ 400,000.00
+
+Costo administrativo: $ 600,000.00
+
+
+
+| Costo de mano de obra | Probabilidad | Rango (lim. inf.) | (lim. sup.) | 
+|------:|:-----|---------|:------:|
+|43 |10%| 0% | 10%|
+|44 |20%| 10% | 30%|
+|45 |40%| 30% | 70%|
+|46 |20%| 70% | 90%|
+|47 |10%| 90% | 100%|
+
+
+El costo de los materiales ocilaraá entre $80 y $100.
+
+La media de la demanda es de 15,000 y la desviación estándar es de 4,500.
+
+
+## Proceso
+
+Para poder recrear el trabajo que hicimos clase en Excel, no no hice de una vez la función que me permitiría hacer la función unos cuantos miles de veces. A continuación se presenta el proceso que se siguió y al final del documento se muestra la función final.
+
+Los costos de publicidad y administrativos son fijos, pero los costo de mano de obra, costo de materiales y la demanda sí pueden variar. Estos eventos tienen todos su propia probabilidad y son independientes unos de otros. Lo primero que hice fue crear estas probabilidades para cada uno.
+
+```{r}
+p_MdO <-runif(1,0,1)
+p_c_mat <-runif(1,0,1)
+p_dem <- runif(1,0,1)
+```
+
+Luego se crearon formas para que R devolviera las cantidades de los costos y  demanda para su probabilidad respectiva.
+
+```{r}
+tabla <- matrix(c(43,44,45,46,47,0,0.1,0.3,0.7,0.9,0.1,0.3,0.7,0.9,1),5,3,FALSE)
+tabla
+
+MdO <- if (0 < p_MdO & p_MdO <= 0.1) { 43 
+  } else if (0.1 < p_MdO & p_MdO <= 0.3) { 44
+  } else if (0.3 < p_MdO & p_MdO <= 0.7) { 45
+  } else if (0.7 < p_MdO & p_MdO <= 0.9) { 46
+  } else if (0.9 < p_MdO & p_MdO <= 1) { 47
+  }
+c_mat <- 80+p_c_mat*(100-80)
+demanda <- qnorm(p_dem,150000,4500)
+```
+
+Por último, se juntaron todos estos datos mara que  devolviera la utilidad que recibiría la fabrica de juguetes de Ceci.
+
+```{r}
+utilidad <- demanda*(149 - MdO - c_mat) - 400000 - 600000
+```
+
+## Unificación
+
+Al unir lo anteriormente presentado, obtenemos como resultado un posible monto de utilidad que Ceci podría hacer. Sin embargo, necesitamos simular miles de posibles resultados para conocer de manera más precisa lo que Ceci podría tener de utilidad. Por lo tanto, lo que recibe esta función, es la cantidad de veces que uno quisiera que se corriera la simulación. Mientras la simulación corre, va guardando los resultados en una matriz, de tal forma que al final si se quisiera se puede calcular el promedio de todas las posibles utilidades.
+
+```{r}
+funcion <- function (filas) {
+  matriz <- matrix(data = NA,filas,7)
+  colnames(matriz) <- c("Prob 1","Costo MdO","Prob 2","Costo Materiales","Prob 3","Demanda","Utilidades")
+  
+  i <- 1
+  while (i <= filas) {
+    p_MdO <-runif(1,0,1)
+    p_c_mat <-runif(1,0,1)
+    p_dem <- runif(1,0,1)
+    MdO <- if (0 < p_MdO & p_MdO <= 0.1) { 43 
+    } else if (0.1 < p_MdO & p_MdO <= 0.3) { 44
+    } else if (0.3 < p_MdO & p_MdO <= 0.7) { 45
+    } else if (0.7 < p_MdO & p_MdO <= 0.9) { 46
+    } else if (0.9 < p_MdO & p_MdO <= 1) { 47
+    }
+    c_mat <- 80+p_c_mat*(100-80)
+    demanda <- qnorm(p_dem,150000,4500)
+    utilidad <- demanda*(149 - MdO - c_mat) - 400000 - 600000
+    
+    vector <- c(p_MdO,MdO,p_c_mat,c_mat,p_dem,demanda, utilidad)
+    
+    matriz[i,] <- vector
+    i <- i +1
+  }
+  return(matriz)
+}
+
+# simulacion <- funcion(5000)
+# ut_prom <- mean(simulacion[,7])
+```
+
